@@ -6,9 +6,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <stdio.h>
 
-
-#include <time.h> // time for seeding rand
 
 #define PROMPT "enseash % "
 #define BUFFER_SIZE 1024
@@ -22,6 +21,7 @@ extern int last_signal;
 int read_command(char* buffer);
 void execute_command(const char* cmd);
 void print_random_fortune();
+void build_prompt(char* prompt_buf);
 
 
 #endif
