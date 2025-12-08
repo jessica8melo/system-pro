@@ -12,6 +12,8 @@
 
 #define PROMPT "enseash % "
 #define BUFFER_SIZE 1024
+#define MAX_ARGS 32
+
 
 #define WELCOME_MSG "Bem vindo a o shell da ENSEA!!!!!!!\n Pra quitar, escreva: 'exit'\n"
 #define GOODBYE_MSG "Beijos, tchau!\n"

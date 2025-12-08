@@ -54,12 +54,23 @@ void execute_command(const char* cmd) {
         exit(0); 
     }
 
+    char* argv[MAX_ARGS];
+    char* token = strtok(cmd, " \t\n");  // Divide por espaço/tab/newline
+    int argc = 0;
+
+    while (token != NULL && argc < MAX_ARGS - 1) {
+        argv[argc] = token;
+        argc++;
+        token = strtok(NULL, " \t\n");
+    }
+    argv[argc] = NULL;  // Null-terminate
+    
     struct timespec start_time, end_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
     pid_t pid = fork();
     if (pid == 0) {
-        execlp(cmd, cmd, (char*)NULL);
+        execvp(argv[0], argv);
         exit(127);
     } else if (pid > 0) {
         int status;
