@@ -2,6 +2,7 @@
 
 int last_status = 0;
 int last_signal = 0;
+long last_execution_time_ms = 0;
 
 /**
  * Function: read_command - Reads a command from the user via terminal
@@ -27,21 +28,24 @@ int read_command(char* buffer) {
 }
 
 /**
- * Function: build_prompt - Builds the shell prompt string
+ * Function: build_prompt - Builds the shell prompt with status and execution time
  * Parameters: prompt_buf - Buffer to store the prompt string
  * Return: void
  */
 void build_prompt(char* prompt_buf) {
     if (last_signal != 0) {
-        snprintf(prompt_buf, BUFFER_SIZE, "enseash [sign:%d] %% ", last_signal);
+        snprintf(prompt_buf, BUFFER_SIZE, "enseash [sign:%d|%ldms] %% ", 
+                 last_signal, last_execution_time_ms);
     } else {
-        snprintf(prompt_buf, BUFFER_SIZE, "enseash [exit:%d] %% ", last_status);
+        snprintf(prompt_buf, BUFFER_SIZE, "enseash [exit:%d|%ldms] %% ", 
+                 last_status, last_execution_time_ms);
     }
 }
 
 /**
  * Function: execute_command - Executes the command entered by the user
  * Parameters: cmd - Command string to execute
+ * Signal handling and execution time measurement 
  * Return: void
  */
 void execute_command(const char* cmd) {
@@ -50,14 +54,27 @@ void execute_command(const char* cmd) {
         exit(0); 
     }
 
+    struct timespec start_time, end_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+
     pid_t pid = fork();
     if (pid == 0) {
-        execlp(cmd, cmd, (char*)NULL);  // CORRIGIDO: (char*)NULL
-        exit(127);  // CORRIGIDO: 127 em vez de 1
+        execlp(cmd, cmd, (char*)NULL);
+        exit(127);
     } else if (pid > 0) {
         int status;
         wait(&status);
         
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
+
+
+        // calculate execution time in milliseconds
+        long seconds_diff = end_time.tv_sec - start_time.tv_sec;
+        long nanoseconds_diff = end_time.tv_nsec - start_time.tv_nsec;
+        last_execution_time_ms = seconds_diff * 1000 + nanoseconds_diff / 1000000;
+        
+
+        // how the last process ended
         if (WIFEXITED(status)) {
             last_status = WEXITSTATUS(status);
             last_signal = 0;
@@ -70,12 +87,13 @@ void execute_command(const char* cmd) {
 
 /**
  * Function: main - Main function that implements the shell loop
- * Parameters: void
- * Return: 0 on exit (never reached due to infinite loop, except on EOF)
+ * welcome message and continuously reads and executes commands
+ * no parameters
+ * Return: 0 on exit
  */
 int main() {
     char buffer[BUFFER_SIZE];
-    write(STDOUT_FILENO, WELCOME_MSG, strlen(WELCOME_MSG));  // CORRIGIDO: Movido pra main
+    write(STDOUT_FILENO, WELCOME_MSG, strlen(WELCOME_MSG));
 
     while (1) {
         if (read_command(buffer) == -1) {
