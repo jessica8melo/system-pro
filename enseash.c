@@ -17,6 +17,11 @@ void print_random_fortune() {
 
 
 
+/**
+ * Function: read_command - Reads a command from the user via terminal
+ * Parameters: buffer - Buffer to store the command
+ * Return: 0 on success, -1 on failure
+ */
 int read_command(char* buffer) {
     write(STDOUT_FILENO, WELCOME_MSG, strlen(WELCOME_MSG)); // mensagem bemvindoos
     write(STDOUT_FILENO, PROMPT, strlen(PROMPT)); 
@@ -33,6 +38,11 @@ int read_command(char* buffer) {
     return 0;
 }
 
+/**
+ * Function: execute_command - Executes the command entered by the user
+ * Parameters: cmd - Command string to execute
+ * Return: void
+ */
 void execute_command(const char* cmd) {
     if (strcmp(cmd, "exit") == 0) {
         write(STDOUT_FILENO, GOODBYE_MSG, strlen(GOODBYE_MSG));
@@ -55,6 +65,11 @@ void execute_command(const char* cmd) {
 
 
 
+/**
+ * Function: main - Main function that implements the shell loop
+ * Parameters: void
+ * Return: 0 on exit (never reached due to infinite loop, except on EOF)
+ */
 int main() {
     char buffer[BUFFER_SIZE];
     while (1) {
