@@ -43,9 +43,9 @@ void build_prompt(char* prompt_buf) {
 }
 
 /**
- * Function: execute_command - Executes the command entered by the user
+ * Function: execute_command - Executes the command entered by the user, handles signals 
+ *           and executes time measurement 
  * Parameters: cmd - Command string to execute
- * Signal handling and execution time measurement 
  * Return: void
  */
 void execute_command(const char* cmd) {
@@ -97,9 +97,9 @@ void execute_command(const char* cmd) {
 }
 
 /**
- * Function: main - Main function that implements the shell loop
- * welcome message and continuously reads and executes commands
- * no parameters
+ * Function: main - Main function that implements the shell loop(welcome message and 
+ *                  continuously reads and executes commands)
+ * Parameters: none
  * Return: 0 on exit
  */
 int main() {
