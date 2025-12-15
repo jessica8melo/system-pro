@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include <time.h>
 
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 #define PROMPT "enseash % "
 #define BUFFER_SIZE 1024

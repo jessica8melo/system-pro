@@ -55,21 +55,69 @@ void execute_command(const char* cmd) {
     }
 
     char* argv[MAX_ARGS];
+    char* input_file = NULL;
+    char* output_file = NULL; 
     char* token = strtok(cmd, " \t\n");  // Divide por espaço/tab/newline
     int argc = 0;
 
     while (token != NULL && argc < MAX_ARGS - 1) {
+        // detect redirection of the entrance
+        if(strcmp(token, "<") == 0) {
+            token = strtok(NULL, " \t\n");
+            if(token != NULL) {
+                input_file = token;
+            }
+        }
+
+        // detec redirection of the exit
+        else if(strcmp(token, ">") == 0) {
+            token = strtok(NULL, " \t\n");
+            if(token != NULL) {
+                output_file = token;
+            }
+        }
+
+        else  {
+
         argv[argc] = token;
         argc++;
+        }
         token = strtok(NULL, " \t\n");
     }
     argv[argc] = NULL;  // Null-terminate
+
+    if (argc == 0) {
+        return; // No command to execute
+    }
     
     struct timespec start_time, end_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
     pid_t pid = fork();
     if (pid == 0) {
+    // child process 
+        // handle input redirection
+        if (input_file != NULL) {
+            int in_fd = open(input_file, O_RDONLY);
+            if (in_fd < 0) {
+                perror("open input file");
+                exit(1);
+            }
+            dup2(in_fd, STDIN_FILENO);
+            close(in_fd);
+        }
+
+        // handle output redirection
+        if (output_file != NULL) {
+            int out_fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            if (out_fd < 0) {
+                perror("open output file");
+                exit(1);
+            }
+            dup2(out_fd, STDOUT_FILENO);
+            close(out_fd);
+        }
+
         execvp(argv[0], argv);
         exit(127);
     } else if (pid > 0) {
