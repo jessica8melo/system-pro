@@ -1,4 +1,5 @@
 #include "enseash.h"
+#include "background.h"
 
 int last_status = 0;
 int last_signal = 0;
@@ -6,7 +7,7 @@ long last_execution_time_ms = 0;
 
 
 /**
- * Function: redirect_file_descriptor - redirects a file descriptor to a file
+ *Function: redirect_file_descriptor - redirects a file descriptor to a file
  * Parameters: old_fd - File descriptor to redirect (STDIN_FILENO or STDOUT_FILENO)
  *             filename - File to redirect to
  *             flags - Open flags (O_RDONLY, O_WRONLY | O_CREAT | O_TRUNC, etc.)
@@ -30,14 +31,18 @@ void redirect_file_descriptor(int old_fd, const char* filename, int flags, mode_
  *             argv - Array to store arguments
  *             input_file - Pointer to input file (or NULL)
  *             output_file - Pointer to output file (or NULL)
+ *             background - Pointer to background flag (1 if &, else 0)
  * Return: void
  */
-void parse_command(char* cmd, char* argv[], char** input_file, char** output_file) {
+void parse_command(char* cmd, char* argv[], char** input_file, char** output_file, int* background) {
     char* token = strtok(cmd, " \t\n");
     int argc = 0;
+    *background = 0;
 
     while (token != NULL && argc < MAX_ARGS - 1) {
-        if (strcmp(token, "<") == 0) {
+        if (strcmp(token, "&") == 0) {
+            *background = 1;
+        } else if (strcmp(token, "<") == 0) {
             token = strtok(NULL, " \t\n");
             if (token != NULL) {
                 *input_file = token;
@@ -93,18 +98,20 @@ void execute_pipeline(char* commands[], int num_commands, char* input_file, char
         }
     }
     
-    // Fork and execute each command
+    // fork and execute each command
     for (int i = 0; i < num_commands; i++) {
         char* argv[MAX_ARGS];
         char* dummy_input = NULL;
         char* dummy_output = NULL;
+        int dummy_bg = 0;
+
         
         // strtok modifies the string
         char cmd_copy[BUFFER_SIZE];
         strcpy(cmd_copy, commands[i]);
 
         
-        parse_command(cmd_copy, argv, &dummy_input, &dummy_output);
+        parse_command(cmd_copy, argv, &dummy_input, &dummy_output, &dummy_bg);
         
         if (argv[0] == NULL) {
             continue;
@@ -172,7 +179,7 @@ void execute_pipeline(char* commands[], int num_commands, char* input_file, char
 void measure_execution_time(struct timespec start_time, struct timespec end_time) {
     long seconds_diff = end_time.tv_sec - start_time.tv_sec;
     long nanoseconds_diff = end_time.tv_nsec - start_time.tv_nsec;
-    last_execution_time_ms = seconds_diff * 1000 + nanoseconds_diff / 1000000;
+    last_execution_time_ms = seconds_diff * MILIS_PER_SEC + nanoseconds_diff / NANOS_PER_MILI;
 }
 
 /**
@@ -201,11 +208,13 @@ int read_command(char* buffer) {
 
     write(STDOUT_FILENO, prompt_buf, strlen(prompt_buf));
     ssize_t bytes = read(STDIN_FILENO, buffer, BUFFER_SIZE - 1);
-    if (bytes <= 0) return -1;
+    if (bytes <= 0) {
+        return -1;
+    }
     buffer[bytes] = '\0';
     char* nl = strchr(buffer, '\n');
 
-    if (nl) *nl = '\0'; 
+    if (nl) *nl = '\0';
     return 0;
 }
 
@@ -215,9 +224,24 @@ int read_command(char* buffer) {
  * Return: void
  */
 void build_prompt(char* prompt_buf) {
-    if (last_signal != 0) snprintf(prompt_buf, BUFFER_SIZE, "enseash [sign:%d|%ldms] %% ", last_signal, last_execution_time_ms);
-    else  snprintf(prompt_buf, BUFFER_SIZE, "enseash [exit:%d|%ldms] %% ", last_status, last_execution_time_ms);
 
+    check_background_jobs();
+    int running_jobs = get_running_jobs_count();
+
+
+    if (running_jobs > 0) {
+        if (last_signal != 0) {
+            snprintf(prompt_buf, BUFFER_SIZE, "enseash [%d&|sign:%d|%ldms] %% ", running_jobs, last_signal, last_execution_time_ms);
+        } else {
+            snprintf(prompt_buf, BUFFER_SIZE, "enseash [%d&|exit:%d|%ldms] %% ", running_jobs, last_status, last_execution_time_ms);
+        }
+    } else {
+        if (last_signal != 0) {
+            snprintf(prompt_buf, BUFFER_SIZE, "enseash [sign:%d|%ldms] %% ", last_signal, last_execution_time_ms);
+        } else {
+            snprintf(prompt_buf, BUFFER_SIZE, "enseash [exit:%d|%ldms] %% ", last_status, last_execution_time_ms);
+        }
+    }
 }
 
 /**
@@ -232,11 +256,17 @@ void execute_command(char* cmd) {
         exit(0);
     }
 
+    // special command: jobs
+    if (strcmp(cmd, "jobs") == 0) {
+        print_background_jobs_status();
+        return;
+    }
+
     // strtok modifies the string
     char cmd_for_split[BUFFER_SIZE];
     strcpy(cmd_for_split, cmd);
     
-    // Split command by pipes
+    // split command by pipes
     char* commands[MAX_COMMANDS];
     int num_commands = 0;
     split_by_pipe(cmd_for_split, commands, &num_commands);
@@ -248,22 +278,20 @@ void execute_command(char* cmd) {
     char commands_copy[MAX_COMMANDS][BUFFER_SIZE];
     for (int i = 0; i < num_commands; i++) {
         strcpy(commands_copy[i], commands[i]);
-        commands[i] = commands_copy[i];  // Point to persistent copy
+        commands[i] = commands_copy[i];  // point to persistent copy
     }
-    // extract redirections from first and last commands
+    
+    // extract redirections from original command
     char* input_file = NULL;
     char* output_file = NULL;
-    char* dummy_argv[MAX_ARGS];
+    int background = 0;
     
     // make copies before parsing
-    char cmd_copy1[BUFFER_SIZE];
-    char cmd_copy2[BUFFER_SIZE];
-    strcpy(cmd_copy1, commands[0]);
-    strcpy(cmd_copy2, commands[num_commands - 1]);
-    
     char original_copy[BUFFER_SIZE];
     strcpy(original_copy, cmd);
-    parse_command(original_copy, dummy_argv, &input_file, &input_file);
+    
+    char* dummy_argv[MAX_ARGS];
+    parse_command(original_copy, dummy_argv, &input_file, &output_file, &background);
     
     // Start timing
     struct timespec start_time, end_time;
@@ -277,7 +305,8 @@ void execute_command(char* cmd) {
         char cmd_copy[BUFFER_SIZE];
         strcpy(cmd_copy, commands[0]);
         
-        parse_command(cmd_copy, argv, &input_file, &output_file);
+        int temp_bg = 0;
+        parse_command(cmd_copy, argv, &input_file, &output_file, &temp_bg);
         
         if (argv[0] == NULL) {
             return;
@@ -297,12 +326,17 @@ void execute_command(char* cmd) {
             perror(argv[0]);
             exit(127);
         } else if (pid > 0) {
-            // parent process
-            int status;
-            wait(&status);
-            clock_gettime(CLOCK_UPTIME, &end_time);
-            measure_execution_time(start_time, end_time);
-            update_status(status);
+            if (background) {
+                // Background execution
+                add_background_job(pid, cmd);
+            } else {
+                // parent process - foreground execution
+                int status;
+                wait(&status);
+                clock_gettime(CLOCK_UPTIME, &end_time);
+                measure_execution_time(start_time, end_time);
+                update_status(status);
+            }
         }
     } else {
         // Pipeline (multiple commands)

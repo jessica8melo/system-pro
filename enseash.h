@@ -18,6 +18,9 @@
 #define MAX_ARGS 32
 #define CLOCK_UPTIME CLOCK_MONOTONIC
 #define MAX_COMMANDS 10
+#define MILIS_PER_SEC 1000
+#define NANOS_PER_MILI 1000000
+
 
 
 
@@ -36,7 +39,7 @@ void redirect_fd(int old_fd, const char* filename, int flags, mode_t mode);
 void execute_pipeline(char* commands[], int num_commands, char* input_file, char* output_file);
 void measure_execution_time(struct timespec start_time, struct timespec end_time);
 void update_status(int status);
-void parse_command(char* cmd, char* argv[], char** input_file, char** output_file);
+void parse_command(char* cmd, char* argv[], char** input_file, char** output_file, int* background);
 void split_by_pipe(char* cmd, char* commands[], int* num_commands);
 
 
