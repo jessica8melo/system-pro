@@ -1,6 +1,8 @@
-EnseaSH.pdf
-enseash
-enseash.c
-filelist.txt
-output.txt
-question1.h
+total 296
+-rw-r--r--  1 anapnobrega  staff  92046 Dec  8 08:43 EnseaSH.pdf
+-rwxr-xr-x@ 1 anapnobrega  staff  35112 Dec 15 10:46 enseash
+-rw-r--r--@ 1 anapnobrega  staff  10191 Dec 15 10:45 enseash.c
+-rw-r--r--@ 1 anapnobrega  staff   1176 Dec 15 09:41 enseash.h
+-rw-r--r--@ 1 anapnobrega  staff      0 Dec 15 10:46 filelist.txt
+-rw-r--r--@ 1 anapnobrega  staff     80 Dec 15 08:47 filelist3.txt
+-rw-r--r--@ 1 anapnobrega  staff      0 Dec 14 19:24 output.txt
