@@ -56,8 +56,9 @@ void check_background_jobs(void) {
                 background_jobs[i].status = 1;
                 
                 if (WIFEXITED(status)) {
-                    int exit_code = WEXITSTATUS(status);
-                    printf("[%d]+ Ended: %s\n", background_jobs[i].job_id, background_jobs[i].command);
+                    if (WIFEXITED(status)) {
+                        printf("[%d]+ Ended: %s\n", background_jobs[i].job_id, background_jobs[i].command);
+                    }
                 } else if (WIFSIGNALED(status)) {
                     int sig = WTERMSIG(status);
                     printf("[%d]+ Terminated by signal %d: %s\n", 
