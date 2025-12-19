@@ -1,17 +1,15 @@
 #ifndef ENSEASH_H
 #define ENSEASH_H
 
-#include <unistd.h> // unix: read, write, fork, execlp
+#include <unistd.h> 
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdio.h>
 #include <time.h>
-
 #include <sys/stat.h>
 #include <fcntl.h>
-
 
 #define PROMPT "enseash % "
 #define BUFFER_SIZE 1024
@@ -20,13 +18,8 @@
 #define MAX_COMMANDS 10
 #define MILIS_PER_SEC 1000
 #define NANOS_PER_MILI 1000000
-
-
-
-
 #define WELCOME_MSG "Welcome to ENSEA shell!!!!!!!\n To quit, write: 'exit'\n"
 #define GOODBYE_MSG "Beijos, tchau!(Translation: kisses, bye!)\n"
-
 
 extern int last_status;
 extern int last_signal;
@@ -44,3 +37,4 @@ void split_by_pipe(char* cmd, char* commands[], int* num_commands);
 
 
 #endif
+
