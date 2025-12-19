@@ -8,6 +8,8 @@ The core functionality is divided into two main components:
 - **enseash.c**: Handles command parsing, execution, and the main shell loop
 - **background.c**: Manages background job execution and monitoring
 
+Ps.: Was made one commit per question.
+
 ## What Works
 
 ### Fully Implemented Features
